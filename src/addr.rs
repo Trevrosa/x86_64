@@ -241,12 +241,12 @@ impl VirtAddr {
 
     // FIXME: Move this into the `Step` impl, once `Step` is stabilized.
     #[cfg(feature = "step_trait")]
-    pub(crate) fn steps_between_impl(start: &Self, end: &Self) -> (usize, Option<usize>) {
+    pub(crate) fn steps_between_impl(start: &Self, end: &Self) -> Option<usize> {
         if let Some(steps) = Self::steps_between_u64(start, end) {
             let steps = usize::try_from(steps).ok();
-            (steps.unwrap_or(usize::MAX), steps)
+            steps
         } else {
-            (0, None)
+            None
         }
     }
 
@@ -403,7 +403,7 @@ impl Sub<VirtAddr> for VirtAddr {
 #[cfg(feature = "step_trait")]
 impl Step for VirtAddr {
     #[inline]
-    fn steps_between(start: &Self, end: &Self) -> (usize, Option<usize>) {
+    fn steps_between(start: &Self, end: &Self) -> Option<usize> {
         Self::steps_between_impl(start, end)
     }
 
@@ -756,47 +756,47 @@ mod tests {
     fn virtaddr_steps_between() {
         assert_eq!(
             Step::steps_between(&VirtAddr(0), &VirtAddr(0)),
-            (0, Some(0))
+            Some(0)
         );
         assert_eq!(
             Step::steps_between(&VirtAddr(0), &VirtAddr(1)),
-            (1, Some(1))
+            Some(1)
         );
-        assert_eq!(Step::steps_between(&VirtAddr(1), &VirtAddr(0)), (0, None));
+        assert_eq!(Step::steps_between(&VirtAddr(1), &VirtAddr(0)), None);
         assert_eq!(
             Step::steps_between(
                 &VirtAddr(0x7fff_ffff_ffff),
                 &VirtAddr(0xffff_8000_0000_0000)
             ),
-            (1, Some(1))
+            Some(1)
         );
         assert_eq!(
             Step::steps_between(
                 &VirtAddr(0xffff_8000_0000_0000),
                 &VirtAddr(0x7fff_ffff_ffff)
             ),
-            (0, None)
+            None
         );
         assert_eq!(
             Step::steps_between(
                 &VirtAddr(0xffff_8000_0000_0000),
                 &VirtAddr(0xffff_8000_0000_0000)
             ),
-            (0, Some(0))
+            Some(0)
         );
         assert_eq!(
             Step::steps_between(
                 &VirtAddr(0xffff_8000_0000_0000),
                 &VirtAddr(0xffff_8000_0000_0001)
             ),
-            (1, Some(1))
+            Some(1)
         );
         assert_eq!(
             Step::steps_between(
                 &VirtAddr(0xffff_8000_0000_0001),
                 &VirtAddr(0xffff_8000_0000_0000)
             ),
-            (0, None)
+            None
         );
         // Make sure that we handle `steps > u32::MAX` correctly on 32-bit
         // targets. On 64-bit targets, `0x1_0000_0000` fits into `usize`, so we
@@ -806,7 +806,7 @@ mod tests {
         #[cfg(target_pointer_width = "64")]
         assert_eq!(
             Step::steps_between(&VirtAddr(0), &VirtAddr(0x1_0000_0000)),
-            (0x1_0000_0000, Some(0x1_0000_0000))
+            Some(0x1_0000_0000)
         );
         #[cfg(not(target_pointer_width = "64"))]
         assert_eq!(

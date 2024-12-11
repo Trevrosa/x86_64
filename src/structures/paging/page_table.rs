@@ -353,7 +353,7 @@ impl From<PageTableIndex> for usize {
 #[cfg(feature = "step_trait")]
 impl Step for PageTableIndex {
     #[inline]
-    fn steps_between(start: &Self, end: &Self) -> (usize, Option<usize>) {
+    fn steps_between(start: &Self, end: &Self) -> Option<usize> {
         Step::steps_between(&start.0, &end.0)
     }
 

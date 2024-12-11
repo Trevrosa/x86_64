@@ -160,7 +160,7 @@ impl<S: PageSize> Page<S> {
 
     // FIXME: Move this into the `Step` impl, once `Step` is stabilized.
     #[cfg(any(feature = "instructions", feature = "step_trait"))]
-    pub(crate) fn steps_between_impl(start: &Self, end: &Self) -> (usize, Option<usize>) {
+    pub(crate) fn steps_between_impl(start: &Self, end: &Self) -> Option<usize> {
         use core::convert::TryFrom;
 
         if let Some(steps) =
@@ -168,9 +168,9 @@ impl<S: PageSize> Page<S> {
         {
             let steps = steps / S::SIZE;
             let steps = usize::try_from(steps).ok();
-            (steps.unwrap_or(usize::MAX), steps)
+            steps
         } else {
-            (0, None)
+            None
         }
     }
 
@@ -304,7 +304,7 @@ impl<S: PageSize> Sub<Self> for Page<S> {
 
 #[cfg(feature = "step_trait")]
 impl<S: PageSize> Step for Page<S> {
-    fn steps_between(start: &Self, end: &Self) -> (usize, Option<usize>) {
+    fn steps_between(start: &Self, end: &Self) -> Option<usize> {
         Self::steps_between_impl(start, end)
     }
 
@@ -636,16 +636,16 @@ mod tests {
             (
                 0x0000_0000_0000,
                 0x1000_0000_0000,
-                0x1_0000_0000,
+                0x0,
                 Some(0x1_0000_0000),
             ),
             #[cfg(not(target_pointer_width = "64"))]
             (0x0000_0000_0000, 0x1000_0000_0000, usize::MAX, None),
         ];
-        for (start, end, lower, upper) in test_cases {
+        for (start, end, _lower, upper) in test_cases {
             let start = Page::<Size4KiB>::from_start_address(VirtAddr::new(start)).unwrap();
             let end = Page::from_start_address(VirtAddr::new(end)).unwrap();
-            assert_eq!(Step::steps_between(&start, &end), (lower, upper));
+            assert_eq!(Step::steps_between(&start, &end), upper);
         }
     }
 }
